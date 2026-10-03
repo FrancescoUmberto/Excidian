@@ -1,7 +1,7 @@
 {
-  "id": "excidian",
+  "id": "obxcel",
   "name": "Excidian",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "minAppVersion": "1.13.0",
   "description": "View and edit Excel tables and sheets inside your notes. Edits are saved straight into the .xlsx file, with dropdowns, data validation and OneDrive support.",
   "author": "Umberto Francesco Carolini",

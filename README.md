@@ -15,7 +15,7 @@ Website: [francescoumberto.github.io/ObXcel](https://francescoumberto.github.io/
 ## Installation
 
 - **From Obsidian:** Settings → Community plugins → Browse → search **Excidian** → Install → Enable.
-- **Manually:** download `main.js`, `manifest.json` and `styles.css` from the [latest release](https://github.com/FrancescoUmberto/ObXcel/releases/latest) into `<vault>/.obsidian/plugins/excidian/`, reload Obsidian and enable **Excidian**.
+- **Manually:** download `main.js`, `manifest.json` and `styles.css` from the [latest release](https://github.com/FrancescoUmberto/ObXcel/releases/latest) into `<vault>/.obsidian/plugins/obxcel/`, reload Obsidian and enable **Excidian**.
 
 Requires Obsidian 1.13 or later, on desktop.
 
@@ -184,11 +184,11 @@ npm test        # model tests (Node, no Obsidian needed)
 ```
 
 Install into a vault by copying `main.js`, `manifest.json` and `styles.css` to
-`<vault>/.obsidian/plugins/excidian/`, then enable **Excidian** under Settings → Community plugins.
+`<vault>/.obsidian/plugins/obxcel/`, then enable **Excidian** under Settings → Community plugins.
 For development, symlink the project folder there instead:
 
 ```bash
-ln -s "$PWD" "<vault>/.obsidian/plugins/excidian"
+ln -s "$PWD" "<vault>/.obsidian/plugins/obxcel"
 ```
 
 ## Releasing
