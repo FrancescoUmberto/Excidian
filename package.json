@@ -1,6 +1,6 @@
 {
-  "name": "obxcel",
-  "version": "0.1.0",
+  "name": "excidian",
+  "version": "0.1.1",
   "description": "View and edit Excel tables and sheets inside your Obsidian notes.",
   "main": "main.js",
   "scripts": {
@@ -12,7 +12,6 @@
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^22.0.0",
-    "builtin-modules": "^4.0.0",
     "esbuild": "^0.25.0",
     "obsidian": "latest",
     "tslib": "^2.8.0",
@@ -21,7 +20,7 @@
   },
   "dependencies": {
     "@xmldom/xmldom": "^0.9.12",
-    "jszip": "^3.10.2"
+    "fflate": "^0.8.3"
   },
   "author": "Umberto Francesco Carolini",
   "homepage": "https://francescoumberto.github.io/ObXcel/",

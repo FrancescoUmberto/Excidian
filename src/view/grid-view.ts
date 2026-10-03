@@ -41,7 +41,7 @@ export class GridView {
 		private root: HTMLElement,
 		private callbacks: GridCallbacks,
 	) {
-		root.addClass("obxcel");
+		root.addClass("excidian");
 	}
 
 	/** Draws the grid, updating the existing one in place so an open editor survives refreshes. */
@@ -73,7 +73,7 @@ export class GridView {
 
 	showError(message: string) {
 		this.reset();
-		this.root.createDiv({ cls: "obxcel-error", text: `Obxcel: ${message}` });
+		this.root.createDiv({ cls: "excidian-error", text: `Excidian: ${message}` });
 	}
 
 	setStatus(text: string) {
@@ -95,25 +95,25 @@ export class GridView {
 	private build(columns: string[], rowNumbers: boolean, columnHeader: boolean) {
 		this.reset();
 		this.rowNumbers = rowNumbers;
-		const bar = this.root.createDiv("obxcel-toolbar");
-		this.titleEl = bar.createSpan("obxcel-title");
-		this.statusEl = bar.createSpan("obxcel-status");
+		const bar = this.root.createDiv("excidian-toolbar");
+		this.titleEl = bar.createSpan("excidian-title");
+		this.statusEl = bar.createSpan("excidian-status");
 		const refresh = bar.createEl("button", { cls: "clickable-icon", attr: { "aria-label": "Reload from disk" } });
 		setIcon(refresh, "refresh-cw");
 		refresh.onclick = () => this.callbacks.onRefresh();
-		this.warningsEl = this.root.createDiv("obxcel-warnings");
+		this.warningsEl = this.root.createDiv("excidian-warnings");
 
-		const wrap = this.root.createDiv("obxcel-wrap");
+		const wrap = this.root.createDiv("excidian-wrap");
 		// Keep clicks from moving the editor cursor into the code block source.
 		wrap.addEventListener("mousedown", (e) => e.stopPropagation());
-		const table = wrap.createEl("table", { cls: "obxcel-table" });
+		const table = wrap.createEl("table", { cls: "excidian-table" });
 		this.tableEl = table;
 		const colgroup = table.createEl("colgroup");
-		if (rowNumbers) colgroup.createEl("col", { cls: "obxcel-col-rownum" });
+		if (rowNumbers) colgroup.createEl("col", { cls: "excidian-col-rownum" });
 		this.colEls = columns.map(() => colgroup.createEl("col"));
 		if (columnHeader) {
 			const head = table.createEl("thead").createEl("tr");
-			if (rowNumbers) head.createEl("th", { cls: "obxcel-corner" });
+			if (rowNumbers) head.createEl("th", { cls: "excidian-corner" });
 			for (const label of columns) head.createEl("th", { text: label, attr: { title: label } });
 		}
 
@@ -130,7 +130,7 @@ export class GridView {
 			const r = this.rowEls.indexOf(tr);
 			if (r !== -1) this.startEdit(r, Array.prototype.indexOf.call(tr.children, td) - this.offset);
 		});
-		this.noteEl = this.root.createDiv("obxcel-note");
+		this.noteEl = this.root.createDiv("excidian-note");
 	}
 
 	/**
@@ -165,9 +165,9 @@ export class GridView {
 		const el = this.warningsEl!;
 		el.empty();
 		for (const warning of warnings) {
-			const box = el.createDiv("obxcel-warning");
-			setIcon(box.createSpan("obxcel-warning-icon"), "alert-triangle");
-			box.createSpan({ cls: "obxcel-warning-text", text: warning.text });
+			const box = el.createDiv("excidian-warning");
+			setIcon(box.createSpan("excidian-warning-icon"), "alert-triangle");
+			box.createSpan({ cls: "excidian-warning-text", text: warning.text });
 			for (const action of warning.actions) {
 				const button = box.createEl("button", { text: action.label });
 				button.onclick = () => this.callbacks.onWarningAction(warning.id, action.id);
@@ -179,11 +179,11 @@ export class GridView {
 		let tr = this.rowEls[i];
 		if (!tr) {
 			tr = this.tbody!.createEl("tr");
-			if (this.rowNumbers) tr.createEl("th", { cls: "obxcel-rownum" });
+			if (this.rowNumbers) tr.createEl("th", { cls: "excidian-rownum" });
 			row.cells.forEach(() => tr.createEl("td"));
 			this.rowEls.push(tr);
 		}
-		tr.className = `obxcel-row-${row.kind}`;
+		tr.className = `excidian-row-${row.kind}`;
 		if (this.rowNumbers) (tr.firstElementChild as HTMLElement).setText(row.label);
 		row.cells.forEach((cell, j) => {
 			const td = tr.children[j + this.offset] as HTMLTableCellElement | undefined;
@@ -209,17 +209,17 @@ export class GridView {
 		td.rowSpan = cell.span?.rows ?? 1;
 		if (cell.covered) {
 			td.empty();
-			td.addClass("obxcel-covered");
+			td.addClass("excidian-covered");
 			return;
 		}
 		td.setText(cell.pending ? cell.editText : cell.text);
-		td.toggleClass("obxcel-num", !!cell.numeric);
-		td.toggleClass("obxcel-formula", !!cell.formula);
-		td.toggleClass("obxcel-pending", !!cell.pending);
-		td.toggleClass("obxcel-readonly", !cell.editable);
-		td.toggleClass("obxcel-has-list", !!cell.options?.length && cell.editable);
-		td.toggleClass("obxcel-table-header", !!cell.tableHeader);
-		td.toggleClass("obxcel-wrap-text", !!cell.style?.wrap);
+		td.toggleClass("excidian-num", !!cell.numeric);
+		td.toggleClass("excidian-formula", !!cell.formula);
+		td.toggleClass("excidian-pending", !!cell.pending);
+		td.toggleClass("excidian-readonly", !cell.editable);
+		td.toggleClass("excidian-has-list", !!cell.options?.length && cell.editable);
+		td.toggleClass("excidian-table-header", !!cell.tableHeader);
+		td.toggleClass("excidian-wrap-text", !!cell.style?.wrap);
 		if (cell.style) applyStyle(td, cell.style);
 		if (cell.hint) td.title = cell.hint;
 		else td.removeAttribute("title");
@@ -235,7 +235,7 @@ export class GridView {
 
 		const original = cell.editText;
 		td.empty();
-		td.addClass("obxcel-editing");
+		td.addClass("excidian-editing");
 		const input = td.createEl("input", { type: "text", value: original });
 		const popup =
 			cell.options?.length || cell.help
@@ -254,7 +254,7 @@ export class GridView {
 			const current = this.data[r]?.[c] ?? cell;
 			td.empty();
 			if (commit && text !== original) {
-				td.className = "obxcel-saving";
+				td.className = "excidian-saving";
 				td.setText(text);
 				this.callbacks.onCommit(current, text);
 			} else {
@@ -303,11 +303,11 @@ export class GridView {
 }
 
 function applyStyle(td: HTMLElement, style: CellStyle) {
-	td.toggleClass("obxcel-bold", !!style.bold);
-	td.toggleClass("obxcel-italic", !!style.italic);
-	td.toggleClass("obxcel-underline", !!style.underline);
-	td.toggleClass("obxcel-strike", !!style.strike);
-	if (style.align) td.addClass(`obxcel-align-${style.align}`);
+	td.toggleClass("excidian-bold", !!style.bold);
+	td.toggleClass("excidian-italic", !!style.italic);
+	td.toggleClass("excidian-underline", !!style.underline);
+	td.toggleClass("excidian-strike", !!style.strike);
+	if (style.align) td.addClass(`excidian-align-${style.align}`);
 	// Colours come from the workbook, so they can only be set per cell.
 	if (style.color) td.setCssStyles({ color: style.color });
 	if (style.background) td.setCssStyles({ backgroundColor: style.background });

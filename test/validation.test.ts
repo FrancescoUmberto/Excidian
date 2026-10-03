@@ -1,11 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import JSZip from "jszip";
 import { parseBlockConfig } from "../src/controller/block-config";
 import { buildGrid } from "../src/controller/grid-builder";
 import { parseInput } from "../src/model/values";
 import { Workbook } from "../src/model/workbook";
-import { financeWorkbook } from "./fixture";
+import { financeWorkbook, readEntry } from "./fixture";
 
 const CATEGORIES = ["Stipendio", "Spesa", "Salute", "Sport", "Abbonamenti"];
 const config = (lines: string) => parseBlockConfig(`file: /tmp/finance.xlsx\n${lines}`);
@@ -57,7 +56,7 @@ describe("data validation", () => {
 		const wb = await Workbook.load(await financeWorkbook());
 		wb.writeTableCell(wb.table("Movimenti"), 4, 4, parseInput("Sport"));
 		const saved = await wb.save();
-		const xml = (await (await JSZip.loadAsync(saved)).file("xl/worksheets/sheet2.xml")!.async("string"))!;
+		const xml = readEntry(saved, "xl/worksheets/sheet2.xml")!;
 		assert.match(xml, /<xm:sqref>D2:D4<\/xm:sqref>/);
 		assert.match(xml, /sqref="C2:C4"/);
 

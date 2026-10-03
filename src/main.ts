@@ -2,13 +2,16 @@ import { FileSystemAdapter, Plugin } from "obsidian";
 import { ControllerContext, SheetController } from "./controller/sheet-controller";
 import { DeviceSettings } from "./model/device-settings";
 import { detectOneDriveRoots } from "./model/locations";
-import { ObxcelSettingTab } from "./view/settings-tab";
+import { ExcidianSettingTab } from "./view/settings-tab";
 
-export default class ObxcelPlugin extends Plugin {
+export default class ExcidianPlugin extends Plugin {
 	async onload() {
 		const context: ControllerContext = {
 			settings: new DeviceSettings({
-				load: (key) => this.app.loadLocalStorage(key),
+				load: (key): unknown => {
+					const value: unknown = this.app.loadLocalStorage(key);
+					return value;
+				},
 				save: (key, value) => this.app.saveLocalStorage(key, value),
 			}),
 			active: new Set(),
@@ -16,14 +19,14 @@ export default class ObxcelPlugin extends Plugin {
 		};
 
 		this.addSettingTab(
-			new ObxcelSettingTab(this.app, this, {
+			new ExcidianSettingTab(this.app, this, {
 				settings: context.settings,
 				detectOneDriveRoots: () => detectOneDriveRoots(),
 				onChange: () => context.active.forEach((controller) => controller.restart()),
 			}),
 		);
 
-		this.registerMarkdownCodeBlockProcessor("obxcel", (source, el, ctx) => {
+		this.registerMarkdownCodeBlockProcessor("excidian", (source, el, ctx) => {
 			ctx.addChild(new SheetController(el, source, ctx.sourcePath, context));
 		});
 	}

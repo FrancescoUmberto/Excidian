@@ -22,7 +22,7 @@ export interface ControllerContext {
 	active: Set<SheetController>;
 }
 
-/** Connects one obxcel code block to its workbook: loads it, shows it, saves edits. */
+/** Connects one excidian code block to its workbook: loads it, shows it, saves edits. */
 export class SheetController extends MarkdownRenderChild {
 	private view: GridView;
 	private cfg?: BlockConfig;
@@ -136,7 +136,7 @@ export class SheetController extends MarkdownRenderChild {
 
 		if (!this.warnedOpenInExcel && isOpenInExcel(cfg.file)) {
 			this.warnedOpenInExcel = true;
-			new Notice("Obxcel: this file is open in Excel. Saving there will overwrite edits made here; close it or reload it in Excel.", 8000);
+			new Notice("Excidian: this file is open in Excel. Saving there will overwrite edits made here; close it or reload it in Excel.", 8000);
 		}
 
 		this.ignoreChangesUntil = Date.now() + 10_000;
@@ -151,9 +151,9 @@ export class SheetController extends MarkdownRenderChild {
 			});
 			this.show(wb);
 			this.view.setStatus(`Saved ${formatRef(cell.row, cell.col)}`);
-			if (warning) new Notice(`Obxcel: saved, but ${issueText(warning)}`, 8000);
+			if (warning) new Notice(`Excidian: saved, but ${issueText(warning)}`, 8000);
 		} catch (e) {
-			new Notice(`Obxcel: could not save ${formatRef(cell.row, cell.col)}: ${errorMessage(e)}`);
+			new Notice(`Excidian: could not save ${formatRef(cell.row, cell.col)}: ${errorMessage(e)}`);
 			if (this.grid) this.view.render(this.grid);
 		} finally {
 			this.ignoreChangesUntil = Date.now() + 1000;
@@ -202,7 +202,7 @@ function revealInFileManager(path: string) {
 		const { shell } = (window as unknown as { require(module: string): Electron }).require("electron");
 		shell.showItemInFolder(path);
 	} catch {
-		new Notice(`Obxcel: ${path}`);
+		new Notice(`Excidian: ${path}`);
 	}
 }
 

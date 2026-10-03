@@ -9,7 +9,7 @@ interface Stored {
 	dismissedWarnings?: string[];
 }
 
-const KEY = "obxcel-device-settings";
+const KEY = "excidian-device-settings";
 const MAX_DISMISSED = 50;
 
 /**
@@ -22,12 +22,20 @@ export class DeviceSettings {
 	private read(): Stored {
 		const raw = this.store.load(KEY);
 		if (typeof raw !== "string") return {};
+		let parsed: unknown;
 		try {
-			const parsed: unknown = JSON.parse(raw);
-			return parsed && typeof parsed === "object" ? (parsed as Stored) : {};
+			parsed = JSON.parse(raw);
 		} catch {
 			return {};
 		}
+		if (!parsed || typeof parsed !== "object") return {};
+		// Keep only well-formed fields, in case the stored value was damaged.
+		const root = "oneDriveRoot" in parsed ? parsed.oneDriveRoot : undefined;
+		const dismissed = "dismissedWarnings" in parsed ? parsed.dismissedWarnings : undefined;
+		return {
+			oneDriveRoot: typeof root === "string" ? root : undefined,
+			dismissedWarnings: Array.isArray(dismissed) ? dismissed.filter((id): id is string => typeof id === "string") : undefined,
+		};
 	}
 
 	private write(change: Partial<Stored>) {

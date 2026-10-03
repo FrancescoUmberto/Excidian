@@ -1,4 +1,4 @@
-import JSZip from "jszip";
+import { strFromU8, strToU8, unzipSync, zipSync, type Zippable } from "fflate";
 import { elements, parseXml, serializeXml } from "./xml";
 
 export interface Relationship {
@@ -12,36 +12,29 @@ const CONTENT_TYPES = "[Content_Types].xml";
 
 /**
  * The .xlsx zip container. Parts are parsed on demand, and only parts marked
- * dirty are rewritten on save; everything else is kept byte for byte.
+ * dirty are rewritten on save; the content of every other part is kept as is.
  */
 export class Package {
 	private docs = new Map<string, Document>();
 	private dirty = new Set<string>();
 
-	private constructor(
-		private zip: JSZip,
-		private texts: Map<string, string>,
-	) {}
+	/** Entries in their original order (Excel expects [Content_Types].xml first). */
+	private constructor(private entries: Record<string, Uint8Array>) {}
 
 	static async load(bytes: Uint8Array | ArrayBuffer): Promise<Package> {
-		let zip: JSZip;
 		try {
-			zip = await JSZip.loadAsync(bytes);
+			return new Package(unzipSync(bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes)));
 		} catch {
 			throw new Error("The file is not a valid .xlsx workbook.");
 		}
-		const texts = new Map<string, string>();
-		const xmlFiles = Object.values(zip.files).filter((f) => !f.dir && /\.(xml|rels)$/i.test(f.name));
-		await Promise.all(xmlFiles.map(async (f) => texts.set(f.name, await f.async("string"))));
-		return new Package(zip, texts);
 	}
 
 	xml(path: string): Document | undefined {
 		let doc = this.docs.get(path);
 		if (!doc) {
-			const text = this.texts.get(path);
-			if (text === undefined) return undefined;
-			doc = parseXml(text);
+			const data = this.entries[path];
+			if (data === undefined || path.endsWith("/")) return undefined;
+			doc = parseXml(strFromU8(data));
 			this.docs.set(path, doc);
 		}
 		return doc;
@@ -67,9 +60,8 @@ export class Package {
 
 	/** Deletes a part together with its relationship from `ownerPath` and its content-type entry. */
 	removePart(path: string, ownerPath: string) {
-		if (!this.zip.file(path)) return;
-		this.zip.remove(path);
-		this.texts.delete(path);
+		if (!(path in this.entries)) return;
+		delete this.entries[path];
 		this.docs.delete(path);
 		this.dirty.delete(path);
 
@@ -95,10 +87,12 @@ export class Package {
 	async toBytes(): Promise<Uint8Array> {
 		for (const path of this.dirty) {
 			const doc = this.docs.get(path);
-			if (doc) this.zip.file(path, serializeXml(doc));
+			if (doc) this.entries[path] = strToU8(serializeXml(doc));
 		}
 		this.dirty.clear();
-		return this.zip.generateAsync({ type: "uint8array", compression: "DEFLATE" });
+		const files: Zippable = {};
+		for (const [path, data] of Object.entries(this.entries)) files[path] = [data, { level: path.endsWith("/") ? 0 : 6 }];
+		return zipSync(files);
 	}
 }
 

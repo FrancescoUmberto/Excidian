@@ -205,16 +205,15 @@ class RowBuilder {
 function styleOf(info: CellInfo): CellStyle | undefined {
 	const look = info.look;
 	const formatColor = typeof info.value === "number" ? numberColor(info.value, info.format) : undefined;
-	const style: CellStyle = {
-		bold: look.bold,
-		italic: look.italic,
-		underline: look.underline,
-		strike: look.strike,
-		color: (formatColor && NUMBER_COLORS[formatColor]) ?? look.color,
-		background: look.fill,
-		align: look.align,
-		wrap: look.wrap,
-	};
-	const set = Object.entries(style).filter(([, v]) => v !== undefined);
-	return set.length ? (Object.fromEntries(set) as CellStyle) : undefined;
+	const color = (formatColor && NUMBER_COLORS[formatColor]) ?? look.color;
+	const style: CellStyle = {};
+	if (look.bold) style.bold = true;
+	if (look.italic) style.italic = true;
+	if (look.underline) style.underline = true;
+	if (look.strike) style.strike = true;
+	if (color) style.color = color;
+	if (look.fill) style.background = look.fill;
+	if (look.align) style.align = look.align;
+	if (look.wrap) style.wrap = true;
+	return Object.keys(style).length ? style : undefined;
 }

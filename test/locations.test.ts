@@ -17,7 +17,7 @@ function touch(...parts: string[]): string {
 }
 
 beforeEach(() => {
-	home = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "obxcel-home-")));
+	home = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "excidian-home-")));
 });
 afterEach(() => fs.rmSync(home, { recursive: true, force: true }));
 
@@ -86,7 +86,7 @@ describe("conflict copies", () => {
 		assert.ok(isConflictCopyName(file, "bank-MacBook-Pro-di-Umberto.xlsx"));
 		assert.ok(isConflictCopyName(file, "bank-DESKTOP-4F2K9.xlsx"));
 		assert.ok(isConflictCopyName(file, "bank (1).xlsx"));
-		for (const name of ["bank.xlsx", "bank.obxcel-backup.xlsx", "~$bank.xlsx", "bankrupt.xlsx", "bank-copy.csv", "bank-.xlsx"]) {
+		for (const name of ["bank.xlsx", "bank.excidian-backup.xlsx", "~$bank.xlsx", "bankrupt.xlsx", "bank-copy.csv", "bank-.xlsx"]) {
 			assert.equal(isConflictCopyName(file, name), false, name);
 		}
 	});
@@ -95,7 +95,7 @@ describe("conflict copies", () => {
 		const file = touch("OneDrive/bank.xlsx");
 		const older = touch("OneDrive/bank-DESKTOP-1.xlsx");
 		touch("OneDrive/bank-MacBook.xlsx");
-		touch("OneDrive/bank.obxcel-backup.xlsx");
+		touch("OneDrive/bank.excidian-backup.xlsx");
 		fs.utimesSync(older, new Date(2026, 0, 1), new Date(2026, 0, 1));
 		assert.deepEqual(findConflictCopies(file).map((c) => c.name), ["bank-MacBook.xlsx", "bank-DESKTOP-1.xlsx"]);
 	});

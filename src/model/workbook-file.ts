@@ -10,7 +10,7 @@ const backedUp = new Set<string>();
 
 export function backupPath(file: string): string {
 	const ext = path.extname(file);
-	return path.join(path.dirname(file), `${path.basename(file, ext)}.obxcel-backup${ext}`);
+	return path.join(path.dirname(file), `${path.basename(file, ext)}.excidian-backup${ext}`);
 }
 
 export async function readWorkbook(file: string): Promise<Workbook> {
@@ -45,7 +45,7 @@ export function updateWorkbook(file: string, change: (wb: Workbook) => void): Pr
 				backedUp.add(file);
 			}
 			// Write next to the file, then swap it in, so a crash never leaves half a workbook.
-			const tmp = path.join(path.dirname(file), `.${path.basename(file)}.obxcel-tmp`);
+			const tmp = path.join(path.dirname(file), `.${path.basename(file)}.excidian-tmp`);
 			await fs.promises.writeFile(tmp, bytes);
 			await fs.promises.rename(tmp, file);
 			return wb;
@@ -69,19 +69,19 @@ export function watchFile(file: string, onChange: () => void): () => void {
 	// Watch the folder, not the file: Excel and our own saves replace the file,
 	// which would silently end a watcher attached to the old one.
 	const base = path.basename(file);
-	let timer: ReturnType<typeof setTimeout> | undefined;
+	let timer: number | undefined;
 	let watcher: fs.FSWatcher | undefined;
 	try {
 		watcher = fs.watch(path.dirname(file), (_event, name) => {
 			if (name && name.toString() !== base && !isConflictCopyName(file, name.toString())) return;
-			clearTimeout(timer);
-			timer = setTimeout(onChange, 300);
+			window.clearTimeout(timer);
+			timer = window.setTimeout(onChange, 300);
 		});
 	} catch {
 		// The folder can't be watched; manual refresh still works.
 	}
 	return () => {
-		clearTimeout(timer);
+		window.clearTimeout(timer);
 		watcher?.close();
 	};
 }

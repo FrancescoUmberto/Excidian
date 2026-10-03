@@ -1,4 +1,4 @@
-.obxcel-toolbar {
+.excidian-toolbar {
 	display: flex;
 	align-items: center;
 	gap: var(--size-4-2);
@@ -7,16 +7,16 @@
 	color: var(--text-muted);
 }
 
-.obxcel-title {
+.excidian-title {
 	font-weight: var(--font-semibold);
 }
 
-.obxcel-status {
+.excidian-status {
 	margin-left: auto;
 	color: var(--text-success);
 }
 
-.obxcel-warning {
+.excidian-warning {
 	display: flex;
 	align-items: center;
 	flex-wrap: wrap;
@@ -29,17 +29,17 @@
 	background: rgba(var(--color-orange-rgb), 0.1);
 }
 
-.obxcel-warning-icon {
+.excidian-warning-icon {
 	display: flex;
 	color: var(--color-orange);
 }
 
-.obxcel-warning-text {
+.excidian-warning-text {
 	flex: 1 1 240px;
 }
 
 /* Scrolls both ways: tables fit the width, sheets can be wider than the note. */
-.obxcel-wrap {
+.excidian-wrap {
 	max-height: 70vh;
 	overflow: auto;
 	border: 1px solid var(--background-modifier-border);
@@ -47,7 +47,7 @@
 }
 
 /* Widths are set by GridView.sizeColumns: 100% for tables, Excel's pixel widths for sheets. */
-.obxcel-table {
+.excidian-table {
 	display: table;
 	width: 100%;
 	table-layout: fixed;
@@ -57,8 +57,8 @@
 	margin: 0;
 }
 
-.obxcel-table th,
-.obxcel-table td {
+.excidian-table th,
+.excidian-table td {
 	border: 1px solid var(--background-modifier-border);
 	padding: 2px 8px;
 	height: 26px;
@@ -67,7 +67,7 @@
 	text-overflow: ellipsis;
 }
 
-.obxcel-table thead th {
+.excidian-table thead th {
 	position: sticky;
 	top: 0;
 	z-index: 1;
@@ -78,8 +78,8 @@
 }
 
 /* Row numbers stay visible while scrolling sideways. */
-.obxcel-table th.obxcel-rownum,
-.obxcel-table th.obxcel-corner {
+.excidian-table th.excidian-rownum,
+.excidian-table th.excidian-corner {
 	position: sticky;
 	left: 0;
 	z-index: 1;
@@ -90,37 +90,37 @@
 	text-align: right;
 }
 
-.obxcel-table td {
+.excidian-table td {
 	cursor: cell;
 }
 
-.obxcel-table td:hover {
+.excidian-table td:hover {
 	background: var(--background-modifier-hover);
 }
 
-.obxcel-table td.obxcel-num {
+.excidian-table td.excidian-num {
 	text-align: right;
 }
 
-.obxcel-table td.obxcel-formula {
+.excidian-table td.excidian-formula {
 	color: var(--text-accent);
 }
 
-.obxcel-table td.obxcel-pending {
+.excidian-table td.excidian-pending {
 	font-style: italic;
 	color: var(--text-faint);
 }
 
-.obxcel-table td.obxcel-saving {
+.excidian-table td.excidian-saving {
 	opacity: 0.5;
 }
 
-.obxcel-table td.obxcel-has-list {
+.excidian-table td.excidian-has-list {
 	position: relative;
 	padding-right: 20px;
 }
 
-.obxcel-table td.obxcel-has-list::after {
+.excidian-table td.excidian-has-list::after {
 	content: "▾";
 	position: absolute;
 	right: 6px;
@@ -130,7 +130,7 @@
 	font-size: 0.85em;
 }
 
-.obxcel-popup {
+.excidian-popup {
 	position: fixed;
 	z-index: var(--layer-popover);
 	max-width: 360px;
@@ -142,82 +142,82 @@
 	overflow: hidden;
 }
 
-.obxcel-popup-help {
+.excidian-popup-help {
 	padding: var(--size-4-1) var(--size-4-2);
 	color: var(--text-muted);
 	background: var(--background-secondary);
 }
 
-.obxcel-popup-help + .obxcel-popup-list {
+.excidian-popup-help + .excidian-popup-list {
 	border-top: 1px solid var(--background-modifier-border);
 }
 
-.obxcel-popup-list {
+.excidian-popup-list {
 	max-height: 220px;
 	overflow-y: auto;
 	padding: var(--size-2-1) 0;
 }
 
-.obxcel-popup-item {
+.excidian-popup-item {
 	padding: var(--size-2-2) var(--size-4-2);
 	cursor: pointer;
 	white-space: nowrap;
 }
 
-.obxcel-popup-item:hover {
+.excidian-popup-item:hover {
 	background: var(--background-modifier-hover);
 }
 
-.obxcel-popup-item.is-selected {
+.excidian-popup-item.is-selected {
 	background: var(--interactive-accent);
 	color: var(--text-on-accent);
 }
 
-.obxcel-popup-empty {
+.excidian-popup-empty {
 	padding: var(--size-2-2) var(--size-4-2);
 	color: var(--text-faint);
 }
 
-.obxcel-table td.obxcel-readonly {
+.excidian-table td.excidian-readonly {
 	background: var(--background-secondary-alt);
 	cursor: default;
 }
 
 /* Cells formatted with "Wrap text" in Excel grow in height instead of being cut off. */
-.obxcel-table td.obxcel-wrap-text {
+.excidian-table td.excidian-wrap-text {
 	white-space: pre-wrap;
 	overflow-wrap: anywhere;
 	text-overflow: clip;
 }
 
 /* The header row of an Excel table shown inside a sheet. */
-.obxcel-table td.obxcel-table-header {
+.excidian-table td.excidian-table-header {
 	font-weight: var(--font-semibold);
 	background: var(--background-secondary);
 	border-bottom: 2px solid var(--interactive-accent);
 	cursor: default;
 }
 
-.obxcel-table tr.obxcel-row-totals td {
+.excidian-table tr.excidian-row-totals td {
 	font-weight: var(--font-semibold);
 	border-top: 2px solid var(--background-modifier-border-hover);
 }
 
-.obxcel-table tr.obxcel-row-new th {
+.excidian-table tr.excidian-row-new th {
 	color: var(--text-faint);
 }
 
-.obxcel-table tr.obxcel-row-new td:not(.obxcel-editing) {
+.excidian-table tr.excidian-row-new td:not(.excidian-editing) {
 	background: var(--background-primary-alt);
 }
 
-.obxcel-table td.obxcel-editing {
+.excidian-table td.excidian-editing {
 	padding: 0;
 	outline: 2px solid var(--interactive-accent);
 	outline-offset: -2px;
 }
 
-.obxcel-table td.obxcel-editing input {
+.excidian-table td.excidian-editing input {
 	width: 100%;
 	height: 100%;
 	border: none;
@@ -227,13 +227,13 @@
 	font-size: inherit;
 }
 
-.obxcel-note {
+.excidian-note {
 	margin-top: var(--size-4-1);
 	font-size: var(--font-ui-smaller);
 	color: var(--text-muted);
 }
 
-.obxcel-error {
+.excidian-error {
 	padding: var(--size-4-2);
 	color: var(--text-error);
 	border: 1px solid var(--background-modifier-error);
@@ -241,52 +241,52 @@
 }
 
 /* The top-left corner stays above both the sticky header row and the row numbers. */
-.obxcel-table thead th.obxcel-corner {
+.excidian-table thead th.excidian-corner {
 	z-index: 2;
 }
 
-.obxcel-table col.obxcel-col-rownum {
+.excidian-table col.excidian-col-rownum {
 	width: 44px;
 }
 
 /* Grid positions covered by a merged cell keep a <td>, hidden. */
-.obxcel-table td.obxcel-covered {
+.excidian-table td.excidian-covered {
 	display: none;
 }
 
 /* Cell formatting from the workbook. */
-.obxcel-table td.obxcel-bold {
+.excidian-table td.excidian-bold {
 	font-weight: var(--font-bold);
 }
 
-.obxcel-table td.obxcel-italic {
+.excidian-table td.excidian-italic {
 	font-style: italic;
 }
 
-.obxcel-table td.obxcel-underline {
-	text-decoration: underline;
+.excidian-table td.excidian-underline {
+	text-decoration-line: underline;
 }
 
-.obxcel-table td.obxcel-strike {
-	text-decoration: line-through;
+.excidian-table td.excidian-strike {
+	text-decoration-line: line-through;
 }
 
-.obxcel-table td.obxcel-underline.obxcel-strike {
-	text-decoration: underline line-through;
+.excidian-table td.excidian-underline.excidian-strike {
+	text-decoration-line: underline line-through;
 }
 
-.obxcel-table td.obxcel-align-left {
+.excidian-table td.excidian-align-left {
 	text-align: left;
 }
 
-.obxcel-table td.obxcel-align-center {
+.excidian-table td.excidian-align-center {
 	text-align: center;
 }
 
-.obxcel-table td.obxcel-align-right {
+.excidian-table td.excidian-align-right {
 	text-align: right;
 }
 
-.obxcel-table td.obxcel-align-justify {
+.excidian-table td.excidian-align-justify {
 	text-align: justify;
 }

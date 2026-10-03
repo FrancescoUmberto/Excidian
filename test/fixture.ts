@@ -1,4 +1,10 @@
-import JSZip from "jszip";
+import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
+
+/** The text of one part of a saved workbook, or undefined if it isn't there. */
+export function readEntry(bytes: Uint8Array, path: string): string | undefined {
+	const data = unzipSync(bytes)[path];
+	return data && strFromU8(data);
+}
 
 /**
  * Builds a workbook laid out the way Excel writes one: shared strings, a calculation
@@ -12,7 +18,8 @@ export async function financeWorkbook(options: { totalsRow?: boolean } = {}): Pr
 	const s = (text: string) => strings.indexOf(text);
 	const ref = options.totalsRow ? "A1:E4" : "A1:E3";
 
-	const zip = new JSZip();
+	const files: Record<string, Uint8Array> = {};
+	const zip = { file: (path: string, text: string) => (files[path] = strToU8(text)) };
 	zip.file(
 		"[Content_Types].xml",
 		`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -90,5 +97,5 @@ export async function financeWorkbook(options: { totalsRow?: boolean } = {}): Pr
 		`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <table xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" id="2" name="TabListe" displayName="TabListe" ref="A1:A6"><autoFilter ref="A1:A6"/><tableColumns count="1"><tableColumn id="1" name="Tipo"/></tableColumns><tableStyleInfo name="TableStyleLight1" showRowStripes="1"/></table>`,
 	);
-	return zip.generateAsync({ type: "uint8array", compression: "DEFLATE" });
+	return zipSync(files);
 }

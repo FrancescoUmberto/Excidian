@@ -96,13 +96,13 @@ export function resolveWorkbookPath(file: string, options: PathOptions = {}, mac
 	const relative = file.replace(ONEDRIVE_PREFIX, "");
 	const override = options.oneDriveRoot?.trim();
 	const roots = override ? [expandHome(override, machine.home)] : detectOneDriveRoots(machine);
-	if (!roots.length) throw new Error("No OneDrive folder found on this device. Set it in Settings → Obxcel.");
+	if (!roots.length) throw new Error("No OneDrive folder found on this device. Set it in Settings → Excidian.");
 
 	for (const root of roots) {
 		const full = path.resolve(root, relative);
 		if (fs.existsSync(full)) return full;
 	}
-	const where = override ? `the OneDrive folder set in Settings → Obxcel (${roots[0]})` : `OneDrive. Looked in: ${roots.join(", ")}`;
+	const where = override ? `the OneDrive folder set in Settings → Excidian (${roots[0]})` : `OneDrive. Looked in: ${roots.join(", ")}`;
 	throw new Error(`"${relative}" not found in ${where}. If it's online only, make it available offline.`);
 }
 

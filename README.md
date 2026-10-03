@@ -1,6 +1,6 @@
-# Obxcel
+# Excidian
 
-**Your spreadsheets, alive in your notes.** Obxcel shows Excel tables and sheets inside Obsidian, and every edit you make is saved straight back into the `.xlsx` file. No exports, no copies, no sync scripts.
+**Your spreadsheets, alive in your notes.** Excidian shows Excel tables and sheets inside Obsidian, and every edit you make is saved straight back into the `.xlsx` file. No exports, no copies, no sync scripts.
 
 ![A note showing an Excel table of transactions, with a category dropdown open](https://raw.githubusercontent.com/FrancescoUmberto/ObXcel/main/docs/images/table-mode.png)
 
@@ -14,8 +14,20 @@ Website: [francescoumberto.github.io/ObXcel](https://francescoumberto.github.io/
 
 ## Installation
 
-- **From Obsidian:** Settings → Community plugins → Browse → search **Obxcel** → Install → Enable.
-- **Manually:** download `main.js`, `manifest.json` and `styles.css` from the [latest release](https://github.com/FrancescoUmberto/ObXcel/releases/latest) into `<vault>/.obsidian/plugins/obxcel/`, reload Obsidian and enable **Obxcel**.
+- **From Obsidian:** Settings → Community plugins → Browse → search **Excidian** → Install → Enable.
+- **Manually:** download `main.js`, `manifest.json` and `styles.css` from the [latest release](https://github.com/FrancescoUmberto/ObXcel/releases/latest) into `<vault>/.obsidian/plugins/excidian/`, reload Obsidian and enable **Excidian**.
+
+Requires Obsidian 1.13 or later, on desktop.
+
+## File access and privacy
+
+Excidian reads and writes the Excel files that your notes point to, **including files outside your vault** (for example in your OneDrive folder). For this it uses Node's file system (`fs`) instead of Obsidian's vault API, which only covers files inside the vault. In detail, it:
+
+- reads the workbook named in each `excidian` code block, and writes to it only when you edit a cell;
+- creates `<name>.excidian-backup.xlsx` next to a workbook the first time it saves it in a session, and briefly a hidden temporary file there while saving;
+- looks at the workbook's folder to notice changes and sync-conflict copies, and lists the OneDrive folders in your home folder to resolve `onedrive:` paths.
+
+It touches no other files, makes **no network requests**, and collects no data. The OneDrive folder setting and dismissed warnings are stored on your device only.
 
 ## Usage
 
@@ -24,7 +36,7 @@ A block shows either an **Excel table** or a **sheet**.
 **Table** (Insert → Table in Excel), by its name. Best for lists you keep adding to, like your transactions:
 
 ````markdown
-```obxcel
+```excidian
 file: ~/Documents/Finance/bank.xlsx
 table: Movimenti
 ```
@@ -35,7 +47,7 @@ The table's column names are the header, every row is shown (Excel filters are i
 **Sheet**, whole or part of it. Best for summaries, budgets and dashboards:
 
 ````markdown
-```obxcel
+```excidian
 file: ~/Documents/Finance/bank.xlsx
 sheet: Riepilogo
 cols=[B, C, D]
@@ -81,15 +93,15 @@ If the table or sheet isn't found, the error lists the ones that exist.
 Write the path relative to your OneDrive folder, and the same note works on every computer:
 
 ````markdown
-```obxcel
+```excidian
 file: onedrive:/Finance/bank.xlsx
 table: Movimenti
 ```
 ````
 
-Each computer finds its own OneDrive folder: `~/Library/CloudStorage/OneDrive-…` on macOS, the `%OneDrive%` folder on Windows, `~/OneDrive…` elsewhere. With several OneDrive accounts, the first one that contains the file is used. To choose a folder yourself, set **Settings → Obxcel → OneDrive folder**. This setting is stored on each device and not in the vault, so syncing the vault doesn't copy one computer's path to another.
+Each computer finds its own OneDrive folder: `~/Library/CloudStorage/OneDrive-…` on macOS, the `%OneDrive%` folder on Windows, `~/OneDrive…` elsewhere. With several OneDrive accounts, the first one that contains the file is used. To choose a folder yourself, set **Settings → Excidian → OneDrive folder**. This setting is stored on each device and not in the vault, so syncing the vault doesn't copy one computer's path to another.
 
-**Conflict copies.** When the same file is changed on two devices before they sync, OneDrive keeps both versions and saves one as a copy named after the device, e.g. `bank-MacBook-Pro.xlsx`. Obxcel shows a warning above the table when such a copy appears next to your file. **Show file** opens it in Finder/Explorer so you can merge the entries in Excel and delete the copy. **Dismiss** hides that warning on this device (a newer copy warns again). Names like `bank (1).xlsx` count too, so an unrelated file such as `bank-2025.xlsx` will also trigger the warning; dismiss it once.
+**Conflict copies.** When the same file is changed on two devices before they sync, OneDrive keeps both versions and saves one as a copy named after the device, e.g. `bank-MacBook-Pro.xlsx`. Excidian shows a warning above the table when such a copy appears next to your file. **Show file** opens it in Finder/Explorer so you can merge the entries in Excel and delete the copy. **Dismiss** hides that warning on this device (a newer copy warns again). Names like `bank (1).xlsx` count too, so an unrelated file such as `bank-2025.xlsx` will also trigger the warning; dismiss it once.
 
 Tips:
 
@@ -127,11 +139,11 @@ Tip: to manage a category list in one place, put the categories in their own tab
 - **Only the cells you edit change.** The rest of the workbook (other sheets, charts, pivot tables, formatting) is saved untouched.
 - **Formulas are not calculated in Obsidian.** Excel recalculates everything the next time it opens the file. Until then, a newly written formula shows in grey italics.
 - **Write formulas in English with commas**, e.g. `=SUM(A1;A2)` won't work but `=SUM(A1,A2)` will. That's how .xlsx files store them; Excel shows them in your language.
-- **Close the file in Excel while editing in Obsidian.** If Excel has it open and you then save there, it overwrites the Obsidian edits. Obxcel warns you when it detects this.
+- **Close the file in Excel while editing in Obsidian.** If Excel has it open and you then save there, it overwrites the Obsidian edits. Excidian warns you when it detects this.
 - Rows can't be added to a table with a totals row; turn the totals row off in Excel to use the empty row.
 - Table headers can't be edited from Obsidian (rename columns in Excel).
 - The table reloads on its own when the file changes on disk.
-- The first time Obxcel saves a file in each Obsidian session, it copies the original to `<name>.obxcel-backup.xlsx` next to it.
+- The first time Excidian saves a file in each Obsidian session, it copies the original to `<name>.excidian-backup.xlsx` next to it.
 
 ## Project structure (MVC)
 
@@ -153,7 +165,7 @@ src/
 │   ├── grid-data.ts           The data shape the grid renders
 │   ├── grid-view.ts           Grid rendering, warning banners and keyboard cell editing
 │   ├── cell-popup.ts          Dropdown and help panel under the cell being edited
-│   └── settings-tab.ts        The Settings → Obxcel page
+│   └── settings-tab.ts        The Settings → Excidian page
 └── controller/                Glue between the two
     ├── block-config.ts        Parses the code block settings
     ├── grid-builder.ts        Turns the model into grid data
@@ -172,11 +184,11 @@ npm test        # model tests (Node, no Obsidian needed)
 ```
 
 Install into a vault by copying `main.js`, `manifest.json` and `styles.css` to
-`<vault>/.obsidian/plugins/obxcel/`, then enable **Obxcel** under Settings → Community plugins.
+`<vault>/.obsidian/plugins/excidian/`, then enable **Excidian** under Settings → Community plugins.
 For development, symlink the project folder there instead:
 
 ```bash
-ln -s "$PWD" "<vault>/.obsidian/plugins/obxcel"
+ln -s "$PWD" "<vault>/.obsidian/plugins/excidian"
 ```
 
 ## Releasing

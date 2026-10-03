@@ -23,13 +23,13 @@ export class CellPopup {
 		private onPick: (value: string) => void,
 	) {
 		const doc = anchor.ownerDocument;
-		this.el = doc.body.createDiv("obxcel-popup");
+		this.el = doc.body.createDiv("excidian-popup");
 		// Clicks inside must not blur the input (which would save and close the editor).
 		this.el.addEventListener("mousedown", (e) => e.preventDefault());
-		if (help) this.el.createDiv({ cls: "obxcel-popup-help", text: help });
+		if (help) this.el.createDiv({ cls: "excidian-popup-help", text: help });
 
 		if (options.length) {
-			this.listEl = this.el.createDiv("obxcel-popup-list");
+			this.listEl = this.el.createDiv("excidian-popup-list");
 			// Start with every choice visible and the current value highlighted.
 			this.show(options, options.findIndex((o) => o.value === input.value || o.label === input.value));
 			input.addEventListener("input", () => this.filter(input.value));
@@ -74,10 +74,10 @@ export class CellPopup {
 		this.shown = options;
 		this.listEl!.empty();
 		if (!options.length) {
-			this.listEl!.createDiv({ cls: "obxcel-popup-empty", text: "No matching choice" });
+			this.listEl!.createDiv({ cls: "excidian-popup-empty", text: "No matching choice" });
 		}
 		options.forEach((option) => {
-			const item = this.listEl!.createDiv({ cls: "obxcel-popup-item", text: option.label });
+			const item = this.listEl!.createDiv({ cls: "excidian-popup-item", text: option.label });
 			item.addEventListener("click", () => this.onPick(option.value));
 		});
 		this.setActive(active);
@@ -85,7 +85,7 @@ export class CellPopup {
 	}
 
 	private setActive(index: number) {
-		const items = this.listEl ? Array.from(this.listEl.querySelectorAll<HTMLElement>(".obxcel-popup-item")) : [];
+		const items = this.listEl ? Array.from(this.listEl.querySelectorAll<HTMLElement>(".excidian-popup-item")) : [];
 		items[this.active]?.removeClass("is-selected");
 		this.active = index;
 		items[index]?.addClass("is-selected");

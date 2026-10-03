@@ -1,18 +1,17 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import JSZip from "jszip";
 import { parseBlockConfig } from "../src/controller/block-config";
 import { buildGrid } from "../src/controller/grid-builder";
 import { formatDate, formatNumber } from "../src/model/number-format";
 import { shiftFormula } from "../src/model/ooxml/formula";
 import { parseInput } from "../src/model/values";
 import { Workbook } from "../src/model/workbook";
-import { financeWorkbook } from "./fixture";
+import { financeWorkbook, readEntry } from "./fixture";
 
 const tableConfig = parseBlockConfig("file: /tmp/finance.xlsx\ntable: movimenti");
 
 async function entry(bytes: Uint8Array, path: string): Promise<string | undefined> {
-	return (await JSZip.loadAsync(bytes)).file(path)?.async("string");
+	return readEntry(bytes, path);
 }
 
 describe("reading", () => {

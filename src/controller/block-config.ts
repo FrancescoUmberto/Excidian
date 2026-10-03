@@ -27,7 +27,7 @@ export interface BlockConfig {
 }
 
 /**
- * Reads the `key: value` (or `key=value`) lines of an obxcel code block:
+ * Reads the `key: value` (or `key=value`) lines of an excidian code block:
  *
  *     file: ~/Finance/bank.xlsx   (or onedrive:/Finance/bank.xlsx)
  *     table: Movimenti            (an Excel table, or:)

@@ -56,7 +56,7 @@ jobs:
       - name: Keep the plugin files of this build
         uses: actions/upload-artifact@v4
         with:
-          name: obxcel-${{ steps.version.outputs.version }}
+          name: excidian-${{ steps.version.outputs.version }}
           path: |
             main.js
             manifest.json
@@ -70,22 +70,45 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      # For signing the release files (artifact attestations).
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: obxcel-${{ needs.build.outputs.version }}
+          name: excidian-${{ needs.build.outputs.version }}
 
-      # Obsidian installs from the release whose tag equals manifest.json's version,
-      # and needs main.js, manifest.json and styles.css attached to it.
-      - name: Publish the release if this version is new
+      - name: Check whether this version is released already
+        id: existing
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ needs.build.outputs.version }}
         run: |
           if gh release view "$VERSION" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
             echo "::notice::Release $VERSION already exists. Bump the version (npm version patch) to publish a new one."
-            exit 0
+            echo "released=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "released=false" >> "$GITHUB_OUTPUT"
           fi
+
+      # Lets anyone verify the files were built here from this repository: gh attestation verify main.js -R <repo>
+      - name: Sign the release files
+        if: steps.existing.outputs.released == 'false'
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            main.js
+            manifest.json
+            styles.css
+
+      # Obsidian installs from the release whose tag equals manifest.json's version,
+      # and needs main.js, manifest.json and styles.css attached to it.
+      - name: Publish the release
+        if: steps.existing.outputs.released == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
           gh release create "$VERSION" main.js manifest.json styles.css \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
@@ -112,7 +135,7 @@ jobs:
         run: |
           mkdir _site
           cp -R docs/. _site/
-          sed -i "s/__OBXCEL_VERSION__/$VERSION/g" _site/index.html
+          sed -i "s/__EXCIDIAN_VERSION__/$VERSION/g" _site/index.html
 
       - uses: actions/configure-pages@v5
 
