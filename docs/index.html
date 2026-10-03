@@ -1,0 +1,945 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Obxcel · Excel inside Obsidian</title>
+<meta name="description" content="Obxcel is an Obsidian plugin that shows Excel tables and sheets inside your notes and saves every edit straight back into the .xlsx file.">
+<meta property="og:title" content="Obxcel · Excel inside Obsidian">
+<meta property="og:description" content="Show and edit Excel tables and sheets inside your Obsidian notes. Every edit is saved straight into the .xlsx file.">
+<meta property="og:image" content="images/table-mode.png">
+<meta name="theme-color" content="#0e0e13">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%238b6cf6'/%3E%3Cstop offset='1' stop-color='%2321a366'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3Cpath d='M8 11h16M8 16h16M8 21h16M14 8v16' stroke='white' stroke-width='2' stroke-linecap='round' opacity='.9'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+	:root {
+		--bg: #0e0e13;
+		--bg-raised: #16161d;
+		--bg-card: #1a1a22;
+		--border: #2a2a35;
+		--text: #ececf1;
+		--muted: #a3a3b2;
+		--faint: #6c6c7c;
+		--purple: #8b6cf6;
+		--purple-soft: rgba(139, 108, 246, 0.14);
+		--green: #21a366;
+		--green-bright: #3ddc84;
+		--green-soft: rgba(33, 163, 102, 0.14);
+		--red: #fb6469;
+		--radius: 14px;
+		--max: 1120px;
+		--mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+	}
+
+	* { box-sizing: border-box; }
+
+	html { scroll-behavior: smooth; }
+
+	body {
+		margin: 0;
+		background: var(--bg);
+		color: var(--text);
+		font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+		font-size: 17px;
+		line-height: 1.6;
+		-webkit-font-smoothing: antialiased;
+		overflow-x: hidden;
+	}
+
+	a { color: inherit; }
+
+	img { max-width: 100%; height: auto; display: block; }
+
+	code, pre { font-family: var(--mono); }
+
+	.container {
+		max-width: var(--max);
+		margin: 0 auto;
+		padding: 0 24px;
+	}
+
+	/* ---------- Navigation ---------- */
+	nav {
+		position: sticky;
+		top: 0;
+		z-index: 10;
+		background: rgba(14, 14, 19, 0.72);
+		backdrop-filter: blur(14px);
+		-webkit-backdrop-filter: blur(14px);
+		border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+	}
+
+	nav .container {
+		display: flex;
+		align-items: center;
+		height: 64px;
+		gap: 28px;
+	}
+
+	.brand {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		font-weight: 800;
+		font-size: 19px;
+		text-decoration: none;
+		letter-spacing: -0.01em;
+	}
+
+	.brand-mark {
+		width: 30px;
+		height: 30px;
+		border-radius: 8px;
+		background: linear-gradient(135deg, var(--purple), var(--green));
+		display: grid;
+		place-items: center;
+		box-shadow: 0 4px 18px rgba(139, 108, 246, 0.35);
+	}
+
+	nav .links {
+		display: flex;
+		gap: 24px;
+		margin-left: auto;
+		font-size: 15px;
+	}
+
+	nav .links a {
+		color: var(--muted);
+		text-decoration: none;
+		transition: color 0.15s;
+	}
+
+	nav .links a:hover { color: var(--text); }
+
+	/* ---------- Buttons ---------- */
+	.btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 9px;
+		padding: 13px 22px;
+		border-radius: 10px;
+		font-weight: 600;
+		font-size: 16px;
+		text-decoration: none;
+		transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+		white-space: nowrap;
+	}
+
+	.btn:hover { transform: translateY(-1px); }
+
+	.btn-primary {
+		background: linear-gradient(135deg, #9b7cff, var(--purple));
+		color: #fff;
+		box-shadow: 0 8px 28px rgba(139, 108, 246, 0.35);
+	}
+
+	.btn-primary:hover { box-shadow: 0 10px 34px rgba(139, 108, 246, 0.5); }
+
+	.btn-ghost {
+		background: rgba(255, 255, 255, 0.05);
+		border: 1px solid var(--border);
+		color: var(--text);
+	}
+
+	.btn-ghost:hover { background: rgba(255, 255, 255, 0.09); }
+
+	/* ---------- Hero ---------- */
+	.hero {
+		position: relative;
+		padding: 88px 0 40px;
+		text-align: center;
+	}
+
+	.hero::before {
+		content: "";
+		position: absolute;
+		inset: -200px 0 auto;
+		height: 760px;
+		background:
+			radial-gradient(600px 340px at 30% 40%, rgba(139, 108, 246, 0.22), transparent 70%),
+			radial-gradient(520px 320px at 72% 46%, rgba(33, 163, 102, 0.18), transparent 70%);
+		pointer-events: none;
+		z-index: -1;
+	}
+
+	.eyebrow {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		padding: 6px 14px;
+		border-radius: 999px;
+		background: rgba(255, 255, 255, 0.05);
+		border: 1px solid var(--border);
+		color: var(--muted);
+		font-size: 14px;
+		font-weight: 500;
+	}
+
+	.eyebrow .dot {
+		width: 7px;
+		height: 7px;
+		border-radius: 50%;
+		background: var(--green-bright);
+		box-shadow: 0 0 10px var(--green-bright);
+	}
+
+	h1 {
+		font-size: clamp(34px, 7vw, 76px);
+		line-height: 1.04;
+		letter-spacing: -0.035em;
+		font-weight: 800;
+		margin: 26px auto 22px;
+		max-width: 900px;
+	}
+
+	.gradient-text {
+		background: linear-gradient(100deg, #a990ff 10%, #4be29a 90%);
+		-webkit-background-clip: text;
+		background-clip: text;
+		color: transparent;
+	}
+
+	.lead {
+		font-size: clamp(18px, 2.2vw, 21px);
+		color: var(--muted);
+		max-width: 680px;
+		margin: 0 auto 36px;
+	}
+
+	.lead strong { color: var(--text); font-weight: 600; }
+
+	.cta {
+		display: flex;
+		gap: 14px;
+		justify-content: center;
+		flex-wrap: wrap;
+	}
+
+	.fineprint {
+		margin-top: 18px;
+		font-size: 14px;
+		color: var(--faint);
+	}
+
+	.hero-shot {
+		margin: 64px auto 0;
+		max-width: 1080px;
+		position: relative;
+	}
+
+	.hero-shot::after {
+		content: "";
+		position: absolute;
+		inset: 12% 8% -6%;
+		background: linear-gradient(90deg, rgba(139, 108, 246, 0.35), rgba(33, 163, 102, 0.3));
+		filter: blur(70px);
+		z-index: -1;
+		border-radius: 50%;
+	}
+
+	/* ---------- Sections ---------- */
+	section { padding: 96px 0; }
+
+	.section-head {
+		text-align: center;
+		max-width: 700px;
+		margin: 0 auto 56px;
+	}
+
+	.kicker {
+		color: var(--purple);
+		font-weight: 600;
+		font-size: 14px;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+	}
+
+	h2 {
+		font-size: clamp(32px, 4.4vw, 46px);
+		line-height: 1.12;
+		letter-spacing: -0.025em;
+		font-weight: 800;
+		margin: 12px 0 16px;
+	}
+
+	.section-head p {
+		color: var(--muted);
+		font-size: 19px;
+		margin: 0;
+	}
+
+	/* ---------- Steps ---------- */
+	.steps {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 22px;
+	}
+
+	.step {
+		background: var(--bg-card);
+		border: 1px solid var(--border);
+		border-radius: var(--radius);
+		padding: 28px;
+		position: relative;
+		overflow: hidden;
+	}
+
+	.step-num {
+		width: 36px;
+		height: 36px;
+		border-radius: 10px;
+		display: grid;
+		place-items: center;
+		font-weight: 700;
+		background: var(--purple-soft);
+		color: #b9a6ff;
+		margin-bottom: 18px;
+	}
+
+	.step h3 {
+		margin: 0 0 8px;
+		font-size: 20px;
+		letter-spacing: -0.01em;
+	}
+
+	.step p {
+		margin: 0 0 18px;
+		color: var(--muted);
+		font-size: 16px;
+	}
+
+	.code {
+		background: #0b0b10;
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		padding: 16px 18px;
+		font-size: 14px;
+		line-height: 1.7;
+		overflow-x: auto;
+		color: #d4d4de;
+		margin: 0;
+	}
+
+	.code .fence { color: var(--faint); }
+	.code .k { color: #b9a6ff; }
+	.code .v { color: #7ee2b0; }
+	.code .c { color: var(--faint); font-style: italic; }
+
+	.mini-grid {
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		overflow: hidden;
+		font-size: 12.5px;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.mini-grid div {
+		display: grid;
+		grid-template-columns: 1fr 1fr 0.95fr;
+		border-top: 1px solid var(--border);
+	}
+
+	.mini-grid div:first-child { border-top: none; background: #22222b; color: var(--muted); }
+
+	.mini-grid span { padding: 7px 8px; border-left: 1px solid var(--border); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+	.mini-grid span:first-child { border-left: none; }
+	.mini-grid .num { text-align: right; }
+	.mini-grid .neg { color: var(--red); }
+	.mini-grid .editing { outline: 2px solid var(--purple); outline-offset: -2px; background: #0b0b10; }
+
+	.saved {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		margin-top: 14px;
+		font-size: 14px;
+		color: var(--green-bright);
+	}
+
+	.saved svg { flex: none; }
+
+	/* ---------- Showcase ---------- */
+	.showcase {
+		display: grid;
+		grid-template-columns: 1.25fr 1fr;
+		gap: 56px;
+		align-items: center;
+	}
+
+	.showcase.reverse { grid-template-columns: 1fr 1.25fr; }
+	.showcase.reverse .shot { order: 2; }
+
+	.showcase + .showcase { margin-top: 110px; }
+
+	.shot img {
+		border-radius: 12px;
+		box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+	}
+
+	.showcase h3 {
+		font-size: clamp(26px, 3vw, 34px);
+		line-height: 1.15;
+		letter-spacing: -0.02em;
+		margin: 10px 0 14px;
+	}
+
+	.showcase p { color: var(--muted); margin: 0 0 20px; }
+
+	.checks {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		display: grid;
+		gap: 12px;
+	}
+
+	.checks li {
+		display: flex;
+		gap: 12px;
+		align-items: flex-start;
+		font-size: 16px;
+	}
+
+	.checks svg { flex: none; margin-top: 4px; }
+
+	.checks code { white-space: nowrap; font-size: 14px; color: #c9bbff; }
+
+	.pill {
+		display: inline-block;
+		padding: 3px 11px;
+		border-radius: 999px;
+		font-size: 13px;
+		font-weight: 600;
+	}
+
+	.pill.purple { background: var(--purple-soft); color: #b9a6ff; }
+	.pill.green { background: var(--green-soft); color: var(--green-bright); }
+
+	/* ---------- Features ---------- */
+	.features {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 20px;
+	}
+
+	.feature {
+		background: var(--bg-card);
+		border: 1px solid var(--border);
+		border-radius: var(--radius);
+		padding: 26px;
+		transition: border-color 0.2s, transform 0.2s;
+	}
+
+	.feature:hover {
+		border-color: #3a3a4a;
+		transform: translateY(-2px);
+	}
+
+	.icon {
+		width: 42px;
+		height: 42px;
+		border-radius: 11px;
+		display: grid;
+		place-items: center;
+		margin-bottom: 16px;
+		background: var(--purple-soft);
+		color: #b9a6ff;
+	}
+
+	.icon.g { background: var(--green-soft); color: var(--green-bright); }
+
+	.feature h3 { margin: 0 0 8px; font-size: 18px; letter-spacing: -0.01em; }
+	.feature p { margin: 0; color: var(--muted); font-size: 15.5px; }
+	.feature code { font-size: 13.5px; color: #c9bbff; }
+
+	/* ---------- Safety ---------- */
+	.safety {
+		background: linear-gradient(180deg, var(--bg-raised), var(--bg));
+		border-top: 1px solid var(--border);
+		border-bottom: 1px solid var(--border);
+	}
+
+	.safety-grid {
+		display: grid;
+		grid-template-columns: repeat(4, 1fr);
+		gap: 20px;
+	}
+
+	.safety-item { padding: 6px 4px; }
+
+	.safety-item .big {
+		font-size: 15px;
+		font-weight: 700;
+		color: var(--green-bright);
+		margin-bottom: 8px;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.safety-item p { margin: 0; color: var(--muted); font-size: 15.5px; }
+
+	/* ---------- Reference ---------- */
+	.reference {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 28px;
+		align-items: start;
+	}
+
+	.table-wrap {
+		background: var(--bg-card);
+		border: 1px solid var(--border);
+		border-radius: var(--radius);
+		overflow: hidden;
+	}
+
+	table.ref {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: 15px;
+	}
+
+	table.ref th, table.ref td {
+		text-align: left;
+		padding: 12px 18px;
+		border-top: 1px solid var(--border);
+		vertical-align: top;
+	}
+
+	table.ref thead th {
+		border-top: none;
+		color: var(--faint);
+		font-weight: 600;
+		font-size: 13px;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		background: #1f1f28;
+	}
+
+	table.ref td:first-child { white-space: nowrap; }
+	table.ref code { color: #c9bbff; font-size: 14px; }
+	table.ref td { color: var(--muted); }
+
+	/* ---------- Install ---------- */
+	.install {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 22px;
+	}
+
+	.install-card {
+		background: var(--bg-card);
+		border: 1px solid var(--border);
+		border-radius: var(--radius);
+		padding: 30px;
+	}
+
+	.install-card h3 { margin: 0 0 6px; font-size: 21px; }
+	.install-card > p { color: var(--muted); margin: 0 0 18px; font-size: 16px; }
+
+	.install-card ol {
+		margin: 0 0 22px;
+		padding-left: 22px;
+		color: var(--muted);
+		font-size: 16px;
+		display: grid;
+		gap: 6px;
+	}
+
+	.install-card ol strong { color: var(--text); font-weight: 600; }
+	.install-card code { font-size: 14px; color: #c9bbff; }
+
+	/* ---------- Good to know ---------- */
+	.notes {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 16px 40px;
+		max-width: 920px;
+		margin: 0 auto;
+	}
+
+	.note-item { display: flex; gap: 14px; }
+	.note-item svg { flex: none; margin-top: 4px; color: var(--faint); }
+	.note-item h4 { margin: 0 0 4px; font-size: 16.5px; }
+	.note-item p { margin: 0; color: var(--muted); font-size: 15.5px; }
+
+	/* ---------- Final CTA & footer ---------- */
+	.final {
+		text-align: center;
+		padding: 110px 0;
+		position: relative;
+	}
+
+	.final::before {
+		content: "";
+		position: absolute;
+		inset: 10% 20%;
+		background: radial-gradient(closest-side, rgba(139, 108, 246, 0.18), transparent);
+		z-index: -1;
+	}
+
+	.final h2 { margin-bottom: 26px; }
+
+	footer {
+		border-top: 1px solid var(--border);
+		padding: 32px 0;
+		color: var(--faint);
+		font-size: 14px;
+	}
+
+	footer .container {
+		display: flex;
+		justify-content: space-between;
+		gap: 16px;
+		flex-wrap: wrap;
+	}
+
+	footer a { color: var(--muted); text-decoration: none; }
+	footer a:hover { color: var(--text); }
+
+	/* Grid items may shrink below their content (code, mini tables scroll or clip instead). */
+	.steps > *, .features > *, .showcase > *, .reference > *, .install > *, .safety-grid > *, .notes > * { min-width: 0; }
+
+	/* ---------- Responsive ---------- */
+	@media (max-width: 960px) {
+		.steps, .features { grid-template-columns: 1fr 1fr; }
+		.safety-grid { grid-template-columns: 1fr 1fr; }
+		.showcase, .showcase.reverse { grid-template-columns: 1fr; gap: 32px; }
+		.showcase.reverse .shot { order: 0; }
+		.reference { grid-template-columns: 1fr; }
+	}
+
+	@media (max-width: 680px) {
+		body { font-size: 16px; }
+		nav .links a:not(.gh) { display: none; }
+		.hero { padding-top: 56px; }
+		section { padding: 72px 0; }
+		.steps, .features, .safety-grid, .install, .notes { grid-template-columns: 1fr; }
+		.btn { width: 100%; justify-content: center; }
+		.container { padding: 0 16px; }
+		.mini-grid { font-size: 12px; }
+		table.ref th, table.ref td { padding: 10px 12px; }
+		table.ref td:first-child { white-space: normal; word-break: break-all; }
+	}
+</style>
+</head>
+<body>
+
+<nav>
+	<div class="container">
+		<a class="brand" href="#">
+			<span class="brand-mark">
+				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M4 8h16M4 12h16M4 16h16M10 5v14"/></svg>
+			</span>
+			Obxcel
+		</a>
+		<div class="links">
+			<a href="#how">How it works</a>
+			<a href="#features">Features</a>
+			<a href="#reference">Reference</a>
+			<a href="#install">Install</a>
+			<a class="gh" href="https://github.com/FrancescoUmberto/ObXcel">GitHub</a>
+		</div>
+	</div>
+</nav>
+
+<header class="hero">
+	<div class="container">
+		<span class="eyebrow"><span class="dot"></span>Obsidian plugin<span class="version" data-version="__OBXCEL_VERSION__"> · v__OBXCEL_VERSION__</span></span>
+		<h1>Your spreadsheets,<br><span class="gradient-text">alive in your notes.</span></h1>
+		<p class="lead">
+			Obxcel shows Excel tables and sheets right inside Obsidian, and <strong>every edit you make is saved straight back into the .xlsx file</strong>. No exports, no copies, no sync scripts.
+		</p>
+		<div class="cta">
+			<a class="btn btn-primary" href="#install">
+				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>
+				Install Obxcel
+			</a>
+			<a class="btn btn-ghost" href="https://github.com/FrancescoUmberto/ObXcel">
+				<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.87-1.37-3.87-1.37-.53-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.26.73-1.55-2.56-.29-5.25-1.28-5.25-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.69 5.38-5.26 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/></svg>
+				View on GitHub
+			</a>
+		</div>
+		<p class="fineprint">Free &amp; open source (MIT) · Desktop: macOS, Windows, Linux</p>
+		<div class="hero-shot">
+			<img src="images/table-mode.png" alt="An Obsidian note showing an Excel table of transactions, with a category dropdown open on the row being edited" width="2560" height="1280">
+		</div>
+	</div>
+</header>
+
+<section id="how">
+	<div class="container">
+		<div class="section-head">
+			<div class="kicker">How it works</div>
+			<h2>Three lines of text. A live spreadsheet.</h2>
+			<p>Point a code block at a workbook. Obxcel draws it in the note and writes your changes back to the file.</p>
+		</div>
+
+		<div class="steps">
+			<div class="step">
+				<div class="step-num">1</div>
+				<h3>Point at your workbook</h3>
+				<p>Add an <code>obxcel</code> code block with the file and the table (or sheet) you want.</p>
+<pre class="code"><span class="fence">```obxcel</span>
+<span class="k">file:</span> <span class="v">onedrive:/bank.xlsx</span>
+<span class="k">table:</span> <span class="v">Movements</span>
+<span class="fence">```</span></pre>
+			</div>
+
+			<div class="step">
+				<div class="step-num">2</div>
+				<h3>It renders in place</h3>
+				<p>Values, dates and currencies appear formatted exactly as Excel shows them.</p>
+				<div class="mini-grid" aria-hidden="true">
+					<div><span>Date</span><span class="num">Amount</span><span>Category</span></div>
+					<div><span>01/10/2026</span><span class="num">2,450.00 €</span><span>Salary</span></div>
+					<div><span>02/10/2026</span><span class="num neg">-64.30 €</span><span>Groceries</span></div>
+					<div><span>04/10/2026</span><span class="num neg">-39.90 €</span><span>Sport</span></div>
+				</div>
+			</div>
+
+			<div class="step">
+				<div class="step-num">3</div>
+				<h3>Edit, and it's saved</h3>
+				<p>Click a cell and type. <b>Enter</b> moves down, <b>Tab</b> moves right. The .xlsx is updated instantly.</p>
+				<div class="mini-grid" aria-hidden="true">
+					<div><span>Date</span><span class="num">Amount</span><span>Category</span></div>
+					<div><span>10/10/2026</span><span class="num neg">-89.00 €</span><span class="editing">Sport▾</span></div>
+				</div>
+				<div class="saved">
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+					Saved to bank.xlsx
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
+
+<section style="padding-top:20px">
+	<div class="container">
+		<div class="showcase">
+			<div class="shot"><img src="images/table-detail.png" alt="Close-up of table mode: a transactions table with a dropdown open on the category column" loading="lazy" width="1680" height="760"></div>
+			<div>
+				<span class="pill purple">table:</span>
+				<h3>Excel tables that grow as you type</h3>
+				<p>Made for the lists you add to every day, like transactions, workouts and reading logs.</p>
+				<ul class="checks">
+					<li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3ddc84" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Type in the empty last row and the table grows in Excel too</li>
+					<li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3ddc84" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Calculated columns, like a running balance, fill themselves in</li>
+					<li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3ddc84" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Your Excel dropdowns become filterable menus</li>
+					<li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3ddc84" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Always fits the width of your note</li>
+				</ul>
+			</div>
+		</div>
+
+		<div class="showcase reverse">
+			<div class="shot"><img src="images/sheet-detail.png" alt="Sheet mode: a budget summary with a merged title, coloured header row and an over-budget value in red" loading="lazy" width="1640" height="680"></div>
+			<div>
+				<span class="pill green">sheet:</span>
+				<h3>Sheets that look like you designed them</h3>
+				<p>Summaries, budgets and dashboards keep the layout you built in Excel.</p>
+				<ul class="checks">
+					<li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3ddc84" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Real column widths, merged cells, fills, bold and alignment</li>
+					<li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3ddc84" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Red negatives from formats like <code>[Red]</code></li>
+					<li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3ddc84" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Hidden rows and columns stay hidden, or pick yours with <code>cols=[B,C,D]</code></li>
+					<li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3ddc84" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Readable in dark mode: default colours follow your theme</li>
+				</ul>
+			</div>
+		</div>
+	</div>
+</section>
+
+<section id="features">
+	<div class="container">
+		<div class="section-head">
+			<div class="kicker">Features</div>
+			<h2>Everything your workbook already knows</h2>
+			<p>Obxcel reads the workbook itself, not an export, so the rules you set in Excel work in Obsidian too.</p>
+		</div>
+
+		<div class="features">
+			<div class="feature">
+				<div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></div>
+				<h3>Dropdowns &amp; validation</h3>
+				<p>List rules become menus. Number, date and length rules are checked, and "Stop" rules block wrong values just like Excel.</p>
+			</div>
+			<div class="feature">
+				<div class="icon g"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg></div>
+				<h3>OneDrive, everywhere</h3>
+				<p>Write <code>onedrive:/Finance/bank.xlsx</code> and every computer finds its own OneDrive folder. Conflict copies are flagged.</p>
+			</div>
+			<div class="feature">
+				<div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg></div>
+				<h3>Live reload</h3>
+				<p>Saved the file in Excel, or synced it from another device? The note refreshes on its own.</p>
+			</div>
+			<div class="feature">
+				<div class="icon g"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg></div>
+				<h3>Smart input</h3>
+				<p>Type <code>-12,50</code>, <code>03/10/2026</code> or <code>=SUM(B2:B9)</code>. Numbers, dates and formulas are recognised and keep the cell's format.</p>
+			</div>
+			<div class="feature">
+				<div class="icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg></div>
+				<h3>Files anywhere</h3>
+				<p>Inside the vault (<code>./Sheets/bank.xlsx</code>), in your home folder, on another drive, or in OneDrive.</p>
+			</div>
+			<div class="feature">
+				<div class="icon g"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></div>
+				<h3>Many views, one file</h3>
+				<p>Show the transactions table in a monthly note and the budget sheet on your dashboard. All of them stay in sync.</p>
+			</div>
+		</div>
+	</div>
+</section>
+
+<section class="safety">
+	<div class="container">
+		<div class="section-head">
+			<div class="kicker">Safe by design</div>
+			<h2>Your workbook stays yours</h2>
+			<p>Obxcel doesn't re-create your file through a spreadsheet library. It edits only the cells you change and leaves everything else exactly as it was.</p>
+		</div>
+		<div class="safety-grid">
+			<div class="safety-item">
+				<div class="big"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Surgical edits</div>
+				<p>Charts, pivot tables, other sheets and formatting are kept byte for byte.</p>
+			</div>
+			<div class="safety-item">
+				<div class="big"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Automatic backup</div>
+				<p>The first save of each session keeps a copy of the original next to the file.</p>
+			</div>
+			<div class="safety-item">
+				<div class="big"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Never half-written</div>
+				<p>Each save is written aside and swapped in at once, so a crash can't corrupt the workbook.</p>
+			</div>
+			<div class="safety-item">
+				<div class="big"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Fresh every time</div>
+				<p>The file is re-read right before each save, so changes made in Excel meanwhile aren't lost.</p>
+			</div>
+		</div>
+	</div>
+</section>
+
+<section id="reference">
+	<div class="container">
+		<div class="section-head">
+			<div class="kicker">Reference</div>
+			<h2>A handful of options</h2>
+			<p>Write them as <code>key: value</code> or <code>key=value</code>, one per line.</p>
+		</div>
+		<div class="reference">
+			<div class="table-wrap">
+				<table class="ref">
+					<thead><tr><th>Option</th><th>What it does</th></tr></thead>
+					<tbody>
+						<tr><td><code>file</code></td><td>The workbook. Required.</td></tr>
+						<tr><td><code>table</code></td><td>An Excel table, by name. Fits the note's width.</td></tr>
+						<tr><td><code>sheet</code></td><td>A sheet, by name or position. Shown at Excel's widths.</td></tr>
+						<tr><td><code>range</code></td><td>Part of a sheet: <code>A1:F40</code>, or <code>A1:F</code> for "to the last row".</td></tr>
+						<tr><td><code>cols</code></td><td>Only these columns, in this order: <code>[B, C, D]</code> or <code>[B:D, F]</code>.</td></tr>
+						<tr><td><code>headings</code></td><td><code>false</code> hides column letters and row numbers.</td></tr>
+					</tbody>
+				</table>
+			</div>
+			<div class="table-wrap">
+				<table class="ref">
+					<thead><tr><th>file: accepts</th><th>Resolved from</th></tr></thead>
+					<tbody>
+						<tr><td><code>./Sheets/bank.xlsx</code></td><td>The note's folder</td></tr>
+						<tr><td><code>Sheets/bank.xlsx</code></td><td>The vault root</td></tr>
+						<tr><td><code>~/Documents/bank.xlsx</code></td><td>Your home folder</td></tr>
+						<tr><td><code>/Users/me/bank.xlsx</code></td><td>Anywhere on the computer</td></tr>
+						<tr><td><code>onedrive:/Finance/bank.xlsx</code></td><td>This device's OneDrive folder</td></tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+</section>
+
+<section id="install" style="padding-top:40px">
+	<div class="container">
+		<div class="section-head">
+			<div class="kicker">Install</div>
+			<h2>Up and running in a minute</h2>
+		</div>
+		<div class="install">
+			<div class="install-card">
+				<h3>From Obsidian</h3>
+				<p>The easiest way, with automatic updates.</p>
+				<ol>
+					<li>Open <strong>Settings → Community plugins</strong></li>
+					<li>Click <strong>Browse</strong> and search for <strong>Obxcel</strong></li>
+					<li><strong>Install</strong>, then <strong>Enable</strong></li>
+				</ol>
+				<a class="btn btn-primary" href="obsidian://show-plugin?id=obxcel">Open in Obsidian</a>
+			</div>
+			<div class="install-card">
+				<h3>Manually</h3>
+				<p>For trying a specific version.</p>
+				<ol>
+					<li>Download <code>main.js</code>, <code>manifest.json</code> and <code>styles.css</code> from the latest release</li>
+					<li>Put them in <code>&lt;vault&gt;/.obsidian/plugins/obxcel/</code></li>
+					<li>Reload Obsidian and enable <strong>Obxcel</strong></li>
+				</ol>
+				<a class="btn btn-ghost" href="https://github.com/FrancescoUmberto/ObXcel/releases/latest">Latest release</a>
+			</div>
+		</div>
+	</div>
+</section>
+
+<section style="padding-top:20px">
+	<div class="container">
+		<div class="section-head" style="margin-bottom:40px">
+			<div class="kicker">Good to know</div>
+			<h2>Before you start</h2>
+		</div>
+		<div class="notes">
+			<div class="note-item">
+				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+				<div><h4>Desktop only</h4><p>Obxcel reads files on your computer, so it isn't available on Obsidian mobile.</p></div>
+			</div>
+			<div class="note-item">
+				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+				<div><h4>Excel does the maths</h4><p>Formulas are recalculated the next time Excel opens the file. New formulas show greyed out until then.</p></div>
+			</div>
+			<div class="note-item">
+				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+				<div><h4>One editor at a time</h4><p>Close the file in Excel while editing in Obsidian. Obxcel warns you if it's open.</p></div>
+			</div>
+			<div class="note-item">
+				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+				<div><h4>Formulas in English</h4><p>Write <code>=SUM(A1,A2)</code>: that's how .xlsx files store them. Excel shows them in your language.</p></div>
+			</div>
+		</div>
+	</div>
+</section>
+
+<section class="final">
+	<div class="container">
+		<h2>Stop copying numbers<br><span class="gradient-text">between apps.</span></h2>
+		<div class="cta">
+			<a class="btn btn-primary" href="#install">Install Obxcel</a>
+			<a class="btn btn-ghost" href="https://github.com/FrancescoUmberto/ObXcel#readme">Read the docs</a>
+		</div>
+	</div>
+</section>
+
+<footer>
+	<div class="container">
+		<span>© 2026 Umberto Francesco Carolini · MIT License</span>
+		<span><a href="https://github.com/FrancescoUmberto/ObXcel">GitHub</a> · <a href="https://github.com/FrancescoUmberto/ObXcel/issues">Report an issue</a> · <a href="https://github.com/FrancescoUmberto/ObXcel/releases">Releases</a></span>
+	</div>
+</footer>
+
+<script>
+	// The version is filled in when the site is deployed; hide the label when viewing the raw file.
+	document.querySelectorAll("[data-version]").forEach((el) => {
+		if (el.dataset.version.startsWith("__")) el.remove();
+	});
+</script>
+</body>
+</html>

@@ -1,0 +1,125 @@
+# On every push to main: test and build the plugin, publish a GitHub release when
+# manifest.json has a version that isn't released yet, and deploy docs/ to GitHub Pages.
+# Pull requests only run the tests and the build.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Test and build
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm test
+
+      - run: npm run build
+
+      - name: Check that the version files agree
+        id: version
+        run: |
+          version=$(node -p "require('./manifest.json').version")
+          package=$(node -p "require('./package.json').version")
+          min_app=$(node -p "require('./manifest.json').minAppVersion")
+          listed=$(node -p "require('./versions.json')['$version'] ?? ''")
+          if [ "$version" != "$package" ]; then
+            echo "::error file=manifest.json::manifest.json ($version) and package.json ($package) have different versions. Use 'npm version' to bump both."
+            exit 1
+          fi
+          if [ "$listed" != "$min_app" ]; then
+            echo "::error file=versions.json::versions.json must map \"$version\" to \"$min_app\"."
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Keep the plugin files of this build
+        uses: actions/upload-artifact@v4
+        with:
+          name: obxcel-${{ steps.version.outputs.version }}
+          path: |
+            main.js
+            manifest.json
+            styles.css
+          if-no-files-found: error
+
+  release:
+    name: Release
+    needs: build
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: obxcel-${{ needs.build.outputs.version }}
+
+      # Obsidian installs from the release whose tag equals manifest.json's version,
+      # and needs main.js, manifest.json and styles.css attached to it.
+      - name: Publish the release if this version is new
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          if gh release view "$VERSION" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "::notice::Release $VERSION already exists. Bump the version (npm version patch) to publish a new one."
+            exit 0
+          fi
+          gh release create "$VERSION" main.js manifest.json styles.css \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "$VERSION" \
+            --generate-notes
+
+  pages:
+    name: Website
+    needs: build
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare the site
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          mkdir _site
+          cp -R docs/. _site/
+          sed -i "s/__OBXCEL_VERSION__/$VERSION/g" _site/index.html
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
