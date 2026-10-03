@@ -10,18 +10,30 @@
 - **OneDrive-aware**: one note works on every computer; conflict copies are flagged
 - **Safe**: only the cells you edit change, with an automatic backup
 
-Website: [francescoumberto.github.io/ObXcel](https://francescoumberto.github.io/ObXcel/) · Desktop only (macOS, Windows, Linux).
+Website: [francescoumberto.github.io/ObXcel](https://francescoumberto.github.io/ObXcel/) · Desktop (macOS, Windows, Linux) and mobile (iOS, Android).
 
 ## Installation
 
 - **From Obsidian:** Settings → Community plugins → Browse → search **Excidian** → Install → Enable.
 - **Manually:** download `main.js`, `manifest.json` and `styles.css` from the [latest release](https://github.com/FrancescoUmberto/ObXcel/releases/latest) into `<vault>/.obsidian/plugins/obxcel/`, reload Obsidian and enable **Excidian**.
 
-Requires Obsidian 1.13 or later, on desktop.
+Requires Obsidian 1.13 or later.
+
+## Desktop and mobile
+
+| | Desktop | Mobile (iOS, Android) |
+| --- | --- | --- |
+| Workbooks inside the vault (`./bank.xlsx`, `Finance/bank.xlsx`) | ✓ | ✓ |
+| Workbooks elsewhere (`~/…`, `/Users/…`, `C:\…`, `onedrive:/…`) | ✓ | — |
+| Tables, sheets, editing, dropdowns, validation | ✓ | ✓ |
+| Reload when the file changes, conflict-copy warnings | ✓ | ✓ |
+| "Show file" in Finder / Explorer | ✓ | — |
+
+Mobile apps can only reach files inside the vault. **To use the same note on your computer and your phone, keep the workbook inside the vault** and point to it with a relative path. Sync it with the vault (Obsidian Sync, iCloud, or similar) like any other file. A block that points outside the vault shows a message on mobile explaining this, and keeps working on desktop.
 
 ## File access and privacy
 
-Excidian reads and writes the Excel files that your notes point to, **including files outside your vault** (for example in your OneDrive folder). For this it uses Node's file system (`fs`) instead of Obsidian's vault API, which only covers files inside the vault. In detail, it:
+Excidian reads and writes the Excel files that your notes point to. **On desktop these can be outside your vault** (for example in your OneDrive folder); for this it uses Node's file system (`fs`), because Obsidian's vault API only covers files inside the vault. On mobile it uses only the vault API, so it only reaches files inside the vault. In detail, it:
 
 - reads the workbook named in each `excidian` code block, and writes to it only when you edit a cell;
 - creates `<name>.excidian-backup.xlsx` next to a workbook the first time it saves it in a session, and briefly a hidden temporary file there while saving;
@@ -149,24 +161,27 @@ Tip: to manage a category list in one place, put the categories in their own tab
 
 ```
 src/
-├── main.ts                    Plugin entry: wires settings, the settings tab and the code block
-├── model/                     Excel data and rules. No Obsidian imports, testable in Node.
+├── main.ts                    Plugin entry: picks the platform, wires settings, the settings tab and the code block
+├── model/                     Excel data and rules. No Obsidian or Node imports: runs on desktop and mobile, testable in Node.
 │   ├── workbook.ts            Workbook: sheets, tables, adding table rows, saving
-│   ├── locations.ts           Resolving file paths (~, onedrive:) and finding conflict copies
+│   ├── storage.ts             Storage interface (StoredFile), vault paths, backup and conflict-copy names
+│   ├── workbook-store.ts      Load, queued save with backup, conflict copies, "open in Excel" check
 │   ├── device-settings.ts     Per-device settings (OneDrive folder, dismissed warnings)
 │   ├── sheet.ts               Reading and writing cells in a worksheet
 │   ├── table.ts               An Excel table: range, header/totals rows, columns
 │   ├── validation.ts          Data validation rules: reading, describing, checking values
 │   ├── values.ts              Cell values, parsing typed input, date serials
 │   ├── number-format.ts       Displaying values with Excel number formats
-│   ├── workbook-file.ts       Disk I/O: load, queued atomic save, backup, file watching
 │   └── ooxml/                 Low-level .xlsx format: zip package, XML, references, styles, colours, formulas
 ├── view/                      Drawing only. Knows nothing about files or Excel.
 │   ├── grid-data.ts           The data shape the grid renders
 │   ├── grid-view.ts           Grid rendering, warning banners and keyboard cell editing
 │   ├── cell-popup.ts          Dropdown and help panel under the cell being edited
 │   └── settings-tab.ts        The Settings → Excidian page
-└── controller/                Glue between the two
+├── platform/                  Storage implementations
+│   ├── vault-file.ts          Files inside the vault, via Obsidian's vault API (used on mobile)
+│   └── desktop/               Desktop only, loaded on demand: files anywhere via Node's fs, ~ and onedrive: paths
+└── controller/                Glue between the model and the view
     ├── block-config.ts        Parses the code block settings
     ├── grid-builder.ts        Turns the model into grid data
     └── sheet-controller.ts    Lifecycle of one code block: load, show, save edits, watch, warnings

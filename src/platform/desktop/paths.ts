@@ -1,3 +1,4 @@
+// Desktop only: resolves block paths to files anywhere on the computer, using Node.
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
@@ -104,44 +105,4 @@ export function resolveWorkbookPath(file: string, options: PathOptions = {}, mac
 	}
 	const where = override ? `the OneDrive folder set in Settings → Excidian (${roots[0]})` : `OneDrive. Looked in: ${roots.join(", ")}`;
 	throw new Error(`"${relative}" not found in ${where}. If it's online only, make it available offline.`);
-}
-
-export interface ConflictCopy {
-	name: string;
-	path: string;
-	modified: Date;
-}
-
-/**
- * Whether `name` looks like a sync-conflict copy of `file`: OneDrive appends the
- * device name ("bank-MacBook-Pro.xlsx"), other clients a number ("bank (1).xlsx").
- */
-export function isConflictCopyName(file: string, name: string): boolean {
-	const ext = path.extname(file);
-	const stem = path.basename(file, ext);
-	if (name.startsWith("~$") || !name.startsWith(stem) || !name.endsWith(ext) || name.length <= stem.length + ext.length) return false;
-	const middle = name.slice(stem.length, name.length - ext.length);
-	return /^(-.+| \(.+\))$/.test(middle);
-}
-
-/** Conflict copies of `file` in its folder, newest first. */
-export function findConflictCopies(file: string): ConflictCopy[] {
-	const dir = path.dirname(file);
-	let names: string[];
-	try {
-		names = fs.readdirSync(dir);
-	} catch {
-		return [];
-	}
-	return names
-		.filter((name) => isConflictCopyName(file, name))
-		.flatMap((name) => {
-			const full = path.join(dir, name);
-			try {
-				return [{ name, path: full, modified: fs.statSync(full).mtime }];
-			} catch {
-				return [];
-			}
-		})
-		.sort((a, b) => b.modified.getTime() - a.modified.getTime());
 }

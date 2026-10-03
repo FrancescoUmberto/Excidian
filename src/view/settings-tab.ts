@@ -3,6 +3,8 @@ import type { DeviceSettings } from "../model/device-settings";
 
 export interface SettingsTabOptions {
 	settings: DeviceSettings;
+	/** OneDrive paths only work on desktop; mobile reaches files inside the vault only. */
+	showOneDrive: boolean;
 	detectOneDriveRoots(): string[];
 	/** Called when the tab closes after something changed. */
 	onChange(): void;
@@ -40,6 +42,7 @@ export class ExcidianSettingTab extends PluginSettingTab {
 					desc.appendText(detected.length ? `Detected: ${detected.join(", ")}` : "No OneDrive folder detected on this device.");
 				}),
 				aliases: ["onedrive", "cloud", "sync"],
+				visible: this.options.showOneDrive,
 				control: { type: "text", key: ONEDRIVE_ROOT, placeholder: detected[0] ?? "/path/to/OneDrive" },
 			},
 			{

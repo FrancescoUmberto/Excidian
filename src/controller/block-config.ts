@@ -1,4 +1,3 @@
-import { PathOptions, resolveWorkbookPath } from "../model/locations";
 import { colNumber, MAX_COL } from "../model/ooxml/refs";
 
 export interface AreaRange {
@@ -20,6 +19,7 @@ export type BlockTarget =
 	  };
 
 export interface BlockConfig {
+	/** The `file:` value as written; the platform's FileResolver turns it into a file. */
 	file: string;
 	target: BlockTarget;
 	/** Show column letters and row numbers (default true). */
@@ -36,7 +36,7 @@ export interface BlockConfig {
  *     cols: [B, C, D]             (only these columns, in this order)
  *     headings: false             (hide column letters and row numbers)
  */
-export function parseBlockConfig(source: string, pathOptions: PathOptions = {}): BlockConfig {
+export function parseBlockConfig(source: string): BlockConfig {
 	const cfg: Record<string, string> = {};
 	for (const line of source.split("\n")) {
 		const m = line.match(/^\s*(\w+)\s*[:=]\s*(.+?)\s*$/);
@@ -47,7 +47,7 @@ export function parseBlockConfig(source: string, pathOptions: PathOptions = {}):
 		throw new Error("`range:` and `cols:` work with `sheet:`. For a table, use `table:` alone (table names are unique).");
 	}
 	return {
-		file: resolveWorkbookPath(cfg.file, pathOptions),
+		file: cfg.file,
 		target: cfg.table
 			? { kind: "table", table: cfg.table }
 			: {

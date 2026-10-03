@@ -4,7 +4,10 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { DeviceSettings } from "../src/model/device-settings";
-import { detectOneDriveRoots, findConflictCopies, isConflictCopyName, Machine, resolveWorkbookPath } from "../src/model/locations";
+import { isConflictCopyName } from "../src/model/storage";
+import { findConflictCopies } from "../src/model/workbook-store";
+import { NodeFile } from "../src/platform/desktop/node-file";
+import { detectOneDriveRoots, Machine, resolveWorkbookPath } from "../src/platform/desktop/paths";
 
 let home: string;
 const mac = (): Machine => ({ platform: "darwin", home, env: {} });
@@ -82,7 +85,7 @@ describe("vault-relative paths", () => {
 
 describe("conflict copies", () => {
 	it("recognises OneDrive and numbered copies only", () => {
-		const file = "/x/bank.xlsx";
+		const file = "bank.xlsx";
 		assert.ok(isConflictCopyName(file, "bank-MacBook-Pro-di-Umberto.xlsx"));
 		assert.ok(isConflictCopyName(file, "bank-DESKTOP-4F2K9.xlsx"));
 		assert.ok(isConflictCopyName(file, "bank (1).xlsx"));
@@ -91,13 +94,15 @@ describe("conflict copies", () => {
 		}
 	});
 
-	it("lists copies next to the file, newest first", () => {
+	it("lists copies next to the file, newest first", async () => {
 		const file = touch("OneDrive/bank.xlsx");
 		const older = touch("OneDrive/bank-DESKTOP-1.xlsx");
 		touch("OneDrive/bank-MacBook.xlsx");
 		touch("OneDrive/bank.excidian-backup.xlsx");
 		fs.utimesSync(older, new Date(2026, 0, 1), new Date(2026, 0, 1));
-		assert.deepEqual(findConflictCopies(file).map((c) => c.name), ["bank-MacBook.xlsx", "bank-DESKTOP-1.xlsx"]);
+		const copies = await findConflictCopies(new NodeFile(file));
+		assert.deepEqual(copies.map((c) => c.name), ["bank-MacBook.xlsx", "bank-DESKTOP-1.xlsx"]);
+		assert.equal(typeof copies[0].reveal, "function", "desktop can show the file in Finder/Explorer");
 	});
 });
 

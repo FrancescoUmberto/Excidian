@@ -1,13 +1,12 @@
-import { dirname, join } from "path";
 import { MarkdownRenderChild, Notice } from "obsidian";
 import type { DeviceSettings } from "../model/device-settings";
-import { ConflictCopy, findConflictCopies } from "../model/locations";
 import { formatRef } from "../model/ooxml/refs";
+import type { FileResolver, SiblingFile, StoredFile } from "../model/storage";
 import type { ValidationIssue } from "../model/validation";
 import { CellInput, parseInput } from "../model/values";
 import type { Sheet } from "../model/sheet";
 import type { TableLocation, Workbook } from "../model/workbook";
-import { isOpenInExcel, readWorkbook, updateWorkbook, watchFile } from "../model/workbook-file";
+import { findConflictCopies, isOpenInExcel, readWorkbook, updateWorkbook } from "../model/workbook-store";
 import type { CellData, GridData, WarningData } from "../view/grid-data";
 import { GridView } from "../view/grid-view";
 import { BlockConfig, parseBlockConfig } from "./block-config";
@@ -16,8 +15,8 @@ import { buildGrid } from "./grid-builder";
 /** Services the plugin shares with every code block. */
 export interface ControllerContext {
 	settings: DeviceSettings;
-	/** Absolute path of the vault folder, for relative `file:` paths. */
-	vaultRoot?: string;
+	/** Turns `file:` values into files: anywhere on desktop, inside the vault on mobile. */
+	resolver: FileResolver;
 	/** Controllers currently on screen, so settings changes can restart them. */
 	active: Set<SheetController>;
 }
@@ -26,8 +25,9 @@ export interface ControllerContext {
 export class SheetController extends MarkdownRenderChild {
 	private view: GridView;
 	private cfg?: BlockConfig;
+	private file?: StoredFile;
 	private grid?: GridData;
-	private conflicts: ConflictCopy[] = [];
+	private conflicts: SiblingFile[] = [];
 	private stopWatching?: () => void;
 	private ignoreChangesUntil = 0;
 	private warnedOpenInExcel = false;
@@ -65,18 +65,15 @@ export class SheetController extends MarkdownRenderChild {
 
 	private start() {
 		try {
-			const { vaultRoot, settings } = this.context;
-			this.cfg = parseBlockConfig(this.source, {
-				oneDriveRoot: settings.oneDriveRoot,
-				vaultRoot,
-				noteDir: vaultRoot ? dirname(join(vaultRoot, this.notePath)) : undefined,
-			});
+			this.cfg = parseBlockConfig(this.source);
+			this.file = this.context.resolver.resolve(this.cfg.file, this.notePath);
 		} catch (e) {
 			this.cfg = undefined;
+			this.file = undefined;
 			this.view.showError(errorMessage(e));
 			return;
 		}
-		this.stopWatching = watchFile(this.cfg.file, () => {
+		this.stopWatching = this.file.watch(() => {
 			// Our own saves also change the file; those are already on screen.
 			if (Date.now() >= this.ignoreChangesUntil) void this.reload();
 		});
@@ -89,40 +86,47 @@ export class SheetController extends MarkdownRenderChild {
 	}
 
 	private async reload() {
-		if (!this.cfg) return;
+		if (!this.cfg || !this.file) return;
 		try {
-			this.show(await readWorkbook(this.cfg.file));
+			await this.show(await readWorkbook(this.file));
 		} catch (e) {
 			this.view.showError(errorMessage(e));
 		}
 	}
 
-	private show(wb: Workbook) {
-		this.conflicts = findConflictCopies(this.cfg!.file);
-		this.grid = { ...buildGrid(wb, this.cfg!), warnings: this.conflictWarnings() };
+	private async show(wb: Workbook) {
+		this.conflicts = await findConflictCopies(this.file!);
+		this.grid = { ...buildGrid(wb, this.cfg!), tooltip: this.file!.displayPath, warnings: this.conflictWarnings() };
 		this.view.render(this.grid);
 	}
 
 	private conflictWarnings(): WarningData[] {
 		return this.conflicts
-			.filter((copy) => !this.context.settings.isDismissed(conflictId(copy)))
+			.filter((copy) => !this.context.settings.isDismissed(this.conflictId(copy)))
 			.map((copy) => ({
-				id: conflictId(copy),
+				id: this.conflictId(copy),
 				text:
 					`Possible sync conflict copy: ${copy.name} (changed ${copy.modified.toLocaleString()}). ` +
 					"Some entries may be in that file instead of this one. Merge them in Excel, then delete the copy.",
-				actions: [
-					{ id: "reveal", label: "Show file" },
-					{ id: "dismiss", label: "Dismiss" },
-				],
+				// "Show file" needs a file manager, which only desktop has.
+				actions: [...(copy.reveal ? [{ id: "reveal", label: "Show file" }] : []), { id: "dismiss", label: "Dismiss" }],
 			}));
 	}
 
+	/** Includes the modification time, so a new conflict with the same name warns again. */
+	private conflictId(copy: SiblingFile): string {
+		return `${this.file?.id}|${copy.name}|${copy.modified.getTime()}`;
+	}
+
 	private onWarningAction(warningId: string, actionId: string) {
-		const copy = this.conflicts.find((c) => conflictId(c) === warningId);
+		const copy = this.conflicts.find((c) => this.conflictId(c) === warningId);
 		if (!copy) return;
 		if (actionId === "reveal") {
-			revealInFileManager(copy.path);
+			try {
+				copy.reveal?.();
+			} catch {
+				new Notice(`Excidian: ${copy.name}`);
+			}
 		} else if (actionId === "dismiss" && this.grid) {
 			this.context.settings.dismiss(warningId);
 			this.grid = { ...this.grid, warnings: this.conflictWarnings() };
@@ -132,9 +136,10 @@ export class SheetController extends MarkdownRenderChild {
 
 	private async commit(cell: CellData, text: string) {
 		const cfg = this.cfg!;
+		const file = this.file!;
 		const input = parseInput(text);
 
-		if (!this.warnedOpenInExcel && isOpenInExcel(cfg.file)) {
+		if (!this.warnedOpenInExcel && (await isOpenInExcel(file))) {
 			this.warnedOpenInExcel = true;
 			new Notice("Excidian: this file is open in Excel. Saving there will overwrite edits made here; close it or reload it in Excel.", 8000);
 		}
@@ -142,14 +147,14 @@ export class SheetController extends MarkdownRenderChild {
 		this.ignoreChangesUntil = Date.now() + 10_000;
 		let warning = null as ValidationIssue | null;
 		try {
-			const wb = await updateWorkbook(cfg.file, (wb) => {
+			const wb = await updateWorkbook(file, (wb) => {
 				// Checked against the fresh file, right before writing.
 				const issue = checkEdit(wb, cfg, cell, input);
 				if (issue?.blocking) throw new Error(issueText(issue));
 				warning = issue;
 				applyEdit(wb, cfg, cell, input);
 			});
-			this.show(wb);
+			await this.show(wb);
 			this.view.setStatus(`Saved ${formatRef(cell.row, cell.col)}`);
 			if (warning) new Notice(`Excidian: saved, but ${issueText(warning)}`, 8000);
 		} catch (e) {
@@ -190,21 +195,6 @@ function applyEdit(wb: Workbook, cfg: BlockConfig, cell: CellData, input: CellIn
 	else sheet.setCell(cell.row, cell.col, input);
 }
 
-/** Includes the modification time, so a new conflict with the same name warns again. */
-function conflictId(copy: ConflictCopy): string {
-	return `${copy.path}|${copy.modified.getTime()}`;
-}
-
-function revealInFileManager(path: string) {
-	try {
-		// Obsidian desktop runs on Electron, whose shell can open Finder / Explorer.
-		type Electron = { shell: { showItemInFolder(path: string): void } };
-		const { shell } = (window as unknown as { require(module: string): Electron }).require("electron");
-		shell.showItemInFolder(path);
-	} catch {
-		new Notice(`Excidian: ${path}`);
-	}
-}
 
 function errorMessage(e: unknown): string {
 	return e instanceof Error ? e.message : String(e);

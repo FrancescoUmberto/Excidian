@@ -1,6 +1,6 @@
 {
   "name": "excidian",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "View and edit Excel tables and sheets inside your Obsidian notes.",
   "main": "main.js",
   "scripts": {
